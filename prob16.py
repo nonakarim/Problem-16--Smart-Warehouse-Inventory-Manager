@@ -62,7 +62,24 @@ if choice == "Add Product":
 
             add = st.form_submit_button("Add Product")
 
+            if(add):
+                duplicatedID = False
+                for product in st.session_state.inventory_data:
+                    if product.get("ID") == productID:
+                        duplicatedID = True
 
+                if not duplicatedID:
+                    st.session_state.total_quantity += quantity
+                    st.session_state.inventory_data.append({
+                        "ID": productID,
+                        "Name": productName,
+                        "Quantity": quantity,
+                        "Unit Price": unit_price,
+                        "category": category,
+                    })
+                    st.rerun()
+                else:
+                    st.error("Another product has the same ID")
     
 elif choice == "View Inventory":
     st.header("📦 View Inventory")
