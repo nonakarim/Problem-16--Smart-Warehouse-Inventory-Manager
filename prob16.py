@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 
 # Page Configuration
 st.set_page_config(
@@ -39,7 +40,10 @@ def side_bar():
                      ["Add Product",
                       "View Inventory",
                       "Search Products",
-                      "Stock Management"])
+                      "Stock Management",
+                      "Update Product Price",
+                      "Low-Stock Report",
+                      "Inventory Statistics"])
 
     return choice
 
@@ -53,7 +57,7 @@ def data_enter_form():
                             ])
     quantity = 0
     unit_price = st.number_input("Unit Price", min_value=1)
-    add = st.form_submit_button("Add Product")
+    add = st.form_submit_button("Add Product", type= "primary")
 
     return id, name, category, quantity, unit_price, add
 
@@ -116,7 +120,7 @@ def restock_product():
 
     product = st.selectbox("Products", names)
     new_quantity = st.number_input("Enter New Quantity", min_value= 1)
-    restock = st.button("Restock")
+    restock = st.button("Restock", type= "primary")
 
     if restock:
         st.session_state.total_quantity += new_quantity
@@ -126,8 +130,46 @@ def restock_product():
                 name["Quantity"] = new_quantity
 
         st.rerun()
-    
 
+@st.dialog("Are You Sure You Want To Delete This Product", width= "small", dismissible= False)
+def deletion():
+    col1, col2 = st.columns(2)
+    with col1:
+        yes = st.button("Yes", type= "primary", width= 100)
+    with col2:
+        no = st.button("No", type= "primary", width= 100)
+
+    if yes:
+        for item in st.session_state.inventory_data:
+            if item.get("Name") == products:
+                st.session_state.total_quantity -= item.get("Quantity")
+                st.session_state.products_num -= 1
+                st.session_state.inventory_data.remove(item) 
+                st.success("Product Deleted Successfully")
+                break
+
+        time.sleep(2)
+        st.rerun()
+    if no:
+        st.rerun()
+
+@st.dialog("Are You Sure You Want To Change This Product's Price", width= "small", dismissible= False)
+def price_changing(price):
+    col1, col2 = st.columns(2)
+    with col1:
+        yes = st.button("Yes", type= "primary", width= 100)
+    with col2:
+        no = st.button("No", type= "primary", width= 100)
+
+    if yes:
+        for item in st.session_state.inventory_data:
+            if item.get("Name") == products:
+                item["Unit Price"] = price
+                st.success("This Product Price Was Changed Successfully")
+        time.sleep(2)
+        st.rerun()
+    if no:
+        st.rerun()
 st.title("🏢 Smart Warehouse Inventory Manager", text_alignment= "center")
 
 with st.sidebar:
@@ -175,20 +217,32 @@ elif choice == "View Inventory":
 elif choice == "Search Products":
     useID, useName, UseCategory = searchMethod()
     search_list = []
+    
+    IDs = []
+    for id in st.session_state.inventory_data:
+        IDs.append(id.get("ID"))
+
+    names = []
+    for name in st.session_state.inventory_data:
+        names.append(name.get("Name"))
+
+    categories = []
+    for category in st.session_state.inventory_data:
+        categories.append(category.get("category"))
 
     if useID:
-        searchID = st.text_input("Product ID", key= "ID")
+        searchID = st.selectbox("Product ID", IDs)
         search_list.extend(searchUsingID(searchID))
 
     if useName:
-        searchName = st.text_input("Product Name", key= "Name")
+        searchName = st.selectbox("Product Name", names)
         search_list.extend(searchUsingName(searchName))
 
     if UseCategory:
-        searchCategory = st.text_input("Product Category", key= "Category")
+        searchCategory = st.selectbox("Product Category", categories)
         search_list.extend(searchUsingCategory(searchCategory))
 
-    search = st.button("Search")
+    search = st.button("Search", type= "primary")
     if search:
         seen_ids = set()
         unique_products = []
@@ -204,5 +258,63 @@ elif choice == "Search Products":
 
 if choice == "Stock Management":
     restock_product()
-
+    st.header("B. Delete Product")
     
+    names = []
+    for name in st.session_state.inventory_data:
+        names.append(name.get("Name"))
+
+    products = st.selectbox("Select the product you want to delete", names)
+    delete = st.button("Delete", type= "primary")
+    
+    if delete:
+        for item in st.session_state.inventory_data:
+            if item.get("Name") == products:
+                st.table(item)
+                break
+
+        deletion()
+
+if choice == "Update Product Price":
+    names = []
+    for name in st.session_state.inventory_data:
+        names.append(name.get("Name"))
+
+    products = st.selectbox("Select the product you want to change it's price", names)
+    price = st.number_input("Enter the new price")
+    change = st.button("Change", type= "primary")
+
+    if change:
+        price_changing(price)
+
+if choice == "Low-Stock Report":
+    threshold = st.number_input("Show products with stock below:")
+    search = st.button("Search", key= "search", type= "primary", width= 100)
+    report = []
+
+    if search:
+        for product in st.session_state.inventory_data:
+            if product.get("Quantity") < threshold:
+                report.append({
+                                "Product": product.get("Name"),
+                                "Quantity": product.get("Quantity")
+                            })
+        if report != []:
+            st.table(report)
+        else:
+            st.success("All Products Currently Have Sufficient Stock")
+
+if choice == "Inventory Statistics":
+    col1, col2, col3 = st.columns(3)
+
+    with col2:
+        with st.container(border=True):
+            st.subheader("1. Total Products")
+            st.info(len(st.session_state.inventory_data))
+            st.subheader("2. Total Quantity")
+            st.info(st.session_state.total_quantity)
+
+            st.subheader("3. Total Inventory Value")
+            for product in st.session_state.inventory_data:
+                st.write(product.get("Name"))
+                st.info(product.get("Quantity") * product.get("Unit Price"))
