@@ -36,14 +36,15 @@ def side_bar():
     st.info(st.session_state.total_quantity)
 
     # Page Selection
-    choice = st.sidebar.radio("Main Sections", 
+    choice = st.sidebar.selectbox("Main Sections", 
                      ["Add Product",
                       "View Inventory",
                       "Search Products",
                       "Stock Management",
                       "Update Product Price",
                       "Low-Stock Report",
-                      "Inventory Statistics"])
+                      "Inventory Statistics",
+                      "Value by Category Report"])
 
     return choice
 
@@ -170,7 +171,25 @@ def price_changing(price):
         st.rerun()
     if no:
         st.rerun()
+
+def value_by_category():
+    clothing=0
+    electronics=0
+
+    for product in st.session_state.inventory_data:
+        if product.get("category") == "Electronics":
+            electronics += product.get("Unit Price")
+        else:
+            clothing += product.get("Unit Price")
+
+    col1, col2, col3 = st.columns(3)
+    with col2:
+        with st.container(border=True):
+            st.markdown(f"- **Electronics:** {electronics}")
+            st.markdown(f"- **Clothing:** {clothing}")
+    
 st.title("🏢 Smart Warehouse Inventory Manager", text_alignment= "center")
+
 
 with st.sidebar:
     choice = side_bar()
@@ -349,3 +368,6 @@ if choice == "Inventory Statistics":
                 st.table(minimum_dict)
             else:
                 st.info("All Your Products Are Equaly Stocked")
+
+if choice == "Value by Category Report":
+    value_by_category()
