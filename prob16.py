@@ -127,7 +127,7 @@ def restock_product():
 
         for name in st.session_state.inventory_data:
             if name.get("Name") == product:
-                name["Quantity"] = new_quantity
+                name["Quantity"] += new_quantity
 
         st.rerun()
 
@@ -318,3 +318,34 @@ if choice == "Inventory Statistics":
             for product in st.session_state.inventory_data:
                 st.write(product.get("Name"))
                 st.info(product.get("Quantity") * product.get("Unit Price"))
+
+            st.subheader("4. Highest Stock Product")
+            maximum=0
+            maximum_dict = {}
+            for product in st.session_state.inventory_data:
+                if product.get("Quantity") > maximum:
+                    maximum = product.get("Quantity")
+                    maximum_dict= product
+
+            if maximum_dict != {}:
+                st.table(maximum_dict)
+            else:
+                st.info("All Your Products Are Equaly Stocked")
+
+            st.subheader("5. Lowest Stock Product")
+            minimum=0
+            minimum_dict = {}
+            for product in st.session_state.inventory_data:
+                minimum = product.get("Quantity")
+                minimum_dict = product
+                break
+
+            for product in st.session_state.inventory_data:
+                if product.get("Quantity") < minimum:
+                    minimum = product.get("Quantity")
+                    minimum_dict = product
+
+            if minimum_dict != {}:
+                st.table(minimum_dict)
+            else:
+                st.info("All Your Products Are Equaly Stocked")
